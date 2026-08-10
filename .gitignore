@@ -1,0 +1,15 @@
+# Virtual Environment
+.venv/
+venv/
+ENV/
+
+# Python Cache
+__pycache__/
+*.py[cod]
+
+# PyCharm Files
+.idea/
+
+# Local Settings
+*.log
+ivynode_data.json
