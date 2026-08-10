@@ -7,8 +7,8 @@ Welcome to the **IvyNode Workspace** repository! This is a desktop productivity 
 ## 📸 Preview
 
 <p float="left">
-  <img src="screenshots/IvyNode_Dashboard_Dark" width="49%" />
-  <img src="screenshots/IvyNode_Dashboard_Light" width="49%" />
+  <img src="screenshots/IvyNode_Dashboard_Dark.png" width="49%" />
+  <img src="screenshots/IvyNode_Dashboard_Light.png" width="49%" />
 </p>
 
 ---
