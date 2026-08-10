@@ -6,7 +6,10 @@ Welcome to the **IvyNode Workspace** repository! This is a desktop productivity 
 
 ## 📸 Preview
 
-![IvyNode Workspace UI](screenshots/IvyNode_Dashboard_Dark.png)
+<p float="left">
+  <img src="screenshots/IvyNode_Dashboard_Dark" width="49%" />
+  <img src="screenshots/IvyNode_Dashboard_Light" width="49%" />
+</p>
 
 ---
 
