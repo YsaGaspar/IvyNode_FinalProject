@@ -3,13 +3,13 @@ import ctypes
 from datetime import datetime
 
 from PyQt6.QtWidgets import (
-    QApplication, QWidget, QGridLayout, QVBoxLayout, QHBoxLayout,
+    QApplication, QWidget, QMessageBox, QGridLayout, QVBoxLayout, QHBoxLayout,
     QLabel, QLineEdit, QListWidget, QListWidgetItem, QPushButton, QGroupBox, QTextEdit,
     QRadioButton, QSpinBox, QButtonGroup, QDialog
 )
 from PyQt6.QtCore import QTimer, Qt
 from PyQt6.QtGui import QKeySequence, QShortcut, QIcon
-from storage import load_data, save_data, TaskItem
+from storage import load_data, save_data, TaskItem, SubtaskItem
 
 try:
     myappid = 'ivynode.workspace.v1'
@@ -201,20 +201,100 @@ class TaskInspectorDialog(QDialog):
     def add_subtask(self):
         title = self.subtask_title_input.text().strip()
         desc = self.subtask_desc_input.text().strip()
-        if title:
-            self.task_data.setdefault("subtasks", []).append({"title": title, "desc": desc})
-            self.reload_subtasks_list()
-            self.subtask_title_input.clear()
-            self.subtask_desc_input.clear()
-            self.subtask_title_input.setFocus()
-            self.parent_window.update_active_task_display()
-            self.parent_window.reload_task_manager_list()
+
+        if not title:
+            QMessageBox.warning(
+                self,
+                "Invalid Subtask",
+                "Subtask title cannot be empty."
+            )
+            return
+
+    def add_subtask(self):
+        title = self.subtask_title_input.text().strip()
+        desc = self.subtask_desc_input.text().strip()
+
+        if not title:
+            QMessageBox.warning(
+                self,
+                "Invalid Subtask",
+                "Subtask title cannot be empty."
+            )
+            return
+
+        self.task_data.setdefault("subtasks", []).append({
+            "title": title,
+            "desc": desc
+        })
+
+        for task in self.parent_window.state.tasks:
+            if task.title == self.task_title:
+                task.subtasks.append(
+                    SubtaskItem(
+                        title=title,
+                        desc=desc
+                    )
+                )
+                break
+
+        if not save_data(self.parent_window.state):
+            QMessageBox.critical(
+                self,
+                "Save Error",
+                "The subtask could not be saved."
+            )
+            return
+
+        self.reload_subtasks_list()
+        self.subtask_title_input.clear()
+        self.subtask_desc_input.clear()
+        self.subtask_title_input.setFocus()
+        self.parent_window.update_active_task_display()
+        self.parent_window.reload_task_manager_list()
+
+        if not save_data(self.parent_window.state):
+            QMessageBox.critical(
+                self,
+                "Save Error",
+                "The subtask could not be saved."
+            )
+            return
+
+        self.reload_subtasks_list()
+        self.subtask_title_input.clear()
+        self.subtask_desc_input.clear()
+        self.subtask_title_input.setFocus()
+        self.parent_window.update_active_task_display()
+        self.parent_window.reload_task_manager_list()
 
     def toggle_task_status(self):
         is_completed = not self.task_data.get("completed", False)
+
         self.task_data["completed"] = is_completed
-        self.lbl_status.setText(f"Status: {'[Completed]' if is_completed else '[In Progress]'}")
-        self.btn_toggle_done.setText("[T] Mark In Progress" if is_completed else "[T] Mark Completed")
+
+        for task in self.parent_window.state.tasks:
+            if task.title == self.task_title:
+                task.completed = is_completed
+                break
+
+        if not save_data(self.parent_window.state):
+            QMessageBox.critical(
+                self,
+                "Save Error",
+                "The task status could not be saved."
+            )
+            return
+
+        self.lbl_status.setText(
+            f"Status: {'[Completed]' if is_completed else '[In Progress]'}"
+        )
+
+        self.btn_toggle_done.setText(
+            "[T] Mark In Progress"
+            if is_completed
+            else "[T] Mark Completed"
+        )
+
         self.parent_window.reload_task_manager_list()
 
     def delete_task(self):
@@ -802,19 +882,58 @@ class IvyNodeWindow(QWidget):
 
     def load_tasks_into_ui(self):
         self.task_list.clear()
+        self.task_details.clear()
+
         for task in self.state.tasks:
             self.task_list.addItem(task.title)
-            self.task_details[task.title] = {"completed": False, "subtasks": []}
 
+            subtasks = []
+
+            for subtask in task.subtasks:
+                subtasks.append({
+                    "title": subtask.title,
+                    "desc": subtask.desc
+                })
+
+            self.task_details[task.title] = {
+                "completed": task.completed,
+                "subtasks": subtasks
+            }
+            
     def add_task(self):
         text = self.task_input.text().strip()
-        if text:
-            new_task = TaskItem(id=len(self.state.tasks) + 1, title=text)
-            self.state.tasks.append(new_task)
-            save_data(self.state)
-            self.task_list.addItem(text)
-            self.task_details[text] = {"completed": False, "subtasks": []}
-            self.task_input.clear()
+
+        if not text:
+           QMessageBox.warning(
+               self,
+               "Invalid Task",
+               "Task title cannot be empty."
+           )
+           return
+
+        new_task = TaskItem(
+            id=len(self.state.tasks) + 1,
+            title=text
+        )
+
+        self.state.tasks.append(new_task)
+
+        if not save_data(self.state):
+            QMessageBox.critical(
+                self,
+                "Save Error",
+                "The task could not be saved."
+            )
+            return
+
+        self.task_list.addItem(text)
+
+        self.task_details[text] = {
+            "completed": False,
+            "subtasks": []
+        }
+
+        self.task_input.clear()
 
 
 if __name__ == "__main__":
